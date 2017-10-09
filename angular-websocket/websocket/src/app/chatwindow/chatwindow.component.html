@@ -1,0 +1,8 @@
+<ul>
+    <li *ngFor="let message of messages;trackBy:message?.id">
+      <span class='chat-from'>{{message.from.name}}</span>: {{message.content}}
+    </li>
+  </ul>
+  <form (ngSubmit)="onSubmit()">
+      <input type="text" [(ngModel)]="msgtext" name='msgtext'>
+    </form>
