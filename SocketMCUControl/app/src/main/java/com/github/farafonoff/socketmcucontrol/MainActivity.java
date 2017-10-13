@@ -15,12 +15,12 @@ import android.widget.TextView;
 
 import java.net.Socket;
 
-public class MainActivity extends AppCompatActivity implements Button.OnClickListener, View.OnTouchListener {
+public class MainActivity extends AppCompatActivity implements SteeringHandler {
     String TAG = MainActivity.class.toString();
     Intent intent;
     ServiceConnection sConn;
     TextView statusView;
-    Button button;
+    SteeringSurface steer;
     boolean run = false;
     String carState = "";
     TransportBinder socketService;
@@ -36,9 +36,8 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
         setContentView(R.layout.activity_main);
         intent = new Intent(this, SocketService.class);
         statusView = (TextView)findViewById(R.id.statusView);
-        button = (Button) findViewById(R.id.toggleButton);
-        button.setOnClickListener(this);
-        button.setOnTouchListener(this);
+        steer = (SteeringSurface) findViewById(R.id.steerer);
+        steer.setSteeringListener(this);
         sConn = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
@@ -56,11 +55,38 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
         bindService(intent, sConn, BIND_AUTO_CREATE);
     }
 
-    @Override
-    public void onClick(View v) {
+    void updateCarState(String s) {
+        this.carState = s;
+        this.statusView.setText(s);
+        this.socketService.setStatus(this.carState);
     }
 
     @Override
+    public void onSteering(float fv, float sv) {
+        float velocity = fv * 511.0f;
+        if (velocity == 0) {
+            float rfactor = sv * 511.0f;
+            updateCarState(build(
+                    Math.round(rfactor),
+                    Math.round(-rfactor)
+            ));
+        } else {
+            if (sv < 0) {
+                updateCarState(build(
+                        Math.round(velocity + velocity * sv),
+                        Math.round(velocity)
+                ));
+            }
+            else {
+                updateCarState(build(
+                        Math.round(velocity),
+                        Math.round(velocity - velocity * sv)
+                ));
+            }
+        }
+    }
+
+/*    @Override
     public boolean onTouch(View v, MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN||event.getAction() == MotionEvent.ACTION_HOVER_ENTER ) {
             this.carState = build(255,255);
@@ -73,5 +99,5 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
             return true;
         }
         return false;
-    }
+    }*/
 }
