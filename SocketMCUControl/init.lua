@@ -12,6 +12,9 @@ end
 --wifi.sta.autoconnect(1);
 wifi.setmode(wifi.SOFTAP)
 wifi.ap.config{ssid=ssid, pwd=pass}
+
+--uart.setup(1, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 0)
+--uart.write(1, "Hello world")
 --print('IP:',wifi.sta.getip());
 --print('MAC:',wifi.sta.getmac());
 
@@ -24,9 +27,13 @@ restart=0;
 gpio.write(led1, gpio.LOW);
 gpio.write(led2, gpio.LOW);
 
+state=""
 
-t=0
-tmr.alarm(0,1000, 1, function() t=t+1 if t>999 then t=0 end end)
+tmr.alarm(0,10, tmr.ALARM_AUTO, function() 
+    if string.len(state)>0 then 
+        print(state)
+    end
+end)
 
 print('HEAP:',node.heap())
 
@@ -51,7 +58,10 @@ udpSocket = net.createUDPSocket()
 udpSocket:listen(1234)
 udpSocket:on("receive", function(s, data, port, ip)
     --print(string.format("received '%d' from %s:%d", string.byte(data, 1), ip, port))
-    process(string.byte(data, 1), string.sub(data, 2))
+    --process(string.byte(data, 1), string.sub(data, 2))
+    state = data
+    print(state)
+    udpSocket:send(port, ip, state);
     --s:send(port, ip, "echo: " .. data)
 end)
 port, ip = udpSocket:getaddr()

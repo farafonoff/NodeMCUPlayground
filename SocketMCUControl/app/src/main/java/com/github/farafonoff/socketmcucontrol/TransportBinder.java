@@ -18,8 +18,8 @@ public class TransportBinder extends Binder {
 
     private SocketService parentInstance;
     private List<TransportEventListener> listeners = new ArrayList<>();
-    void setStatus(int gpio, boolean on) {
-        parentInstance.setStatus(gpio, on);
+    void setStatus(String state) {
+        parentInstance.setStatus(state);
     }
 
     void attachListener(TransportEventListener listener) {
@@ -28,9 +28,5 @@ public class TransportBinder extends Binder {
 
     void detachListener(TransportEventListener listener) {
         listeners.remove(listener);
-    }
-
-    void onGotStatus(boolean[] toggles) {
-
     }
 }

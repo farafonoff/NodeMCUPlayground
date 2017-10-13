@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +35,10 @@ public class SocketService extends Service {
         return binder;
     }
 
-    public void setStatus(final int gpio, final boolean on) {
+    public void setStatus(final String state) {
         ses.execute(new Runnable() {
             public void run() {
-                worker.setStatus(gpio, on);
+                worker.setStatus(state);
             }
         });
     }
@@ -65,17 +66,16 @@ public class SocketService extends Service {
 
         void send(int len) {
             try {
-                clientSocket.send(new DatagramPacket(sendbuf, 2, remote, 1234));
+                clientSocket.send(new DatagramPacket(sendbuf, len, remote, 1234));
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
             }
         }
 
-        synchronized void setStatus(int gpio, boolean on) {
-            sendbuf[0] = (byte)(on?1:2);
-            sendbuf[1] = (byte)gpio;
-            Log.d(TAG, String.format("Set gpio %d to %B", gpio, on));
-            send(2);
+        synchronized void setStatus(final String state) {
+            sendbuf = state.getBytes(Charset.forName("ASCII"));
+            Log.d(TAG, state);
+            send(state.length());
         }
 
         @Override
