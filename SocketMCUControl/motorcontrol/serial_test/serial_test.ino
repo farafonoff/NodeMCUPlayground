@@ -35,6 +35,12 @@ int validateInput() {
    ml.run(dir(numbers[1]));
    mr.setSpeed(abs(numbers[0]));
    ml.setSpeed(abs(numbers[1]));
+  } else {
+    Serial.print(numbers[0]);
+    Serial.print(" ");
+    Serial.print(numbers[1]);
+    Serial.print(" ");
+    Serial.println(numbers[2]);
   }
 }
 
@@ -64,8 +70,8 @@ void nextChar(char d) {
     case 1: tryPrefix(d);
             break;
     case 2: switch(d) {
-              case '+': sgn = 1;readState = 3; break;
-              case '-': sgn = -1;readState = 3; break;
+              case '+': sgn = 1;readState = 3;acc=0; break;
+              case '-': sgn = -1;readState = 3;acc=0; break;
               default:
                         t = digit(d);
                         if (t<0) {

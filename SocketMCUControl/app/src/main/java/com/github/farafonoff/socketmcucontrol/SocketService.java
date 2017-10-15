@@ -1,7 +1,10 @@
 package com.github.farafonoff.socketmcucontrol;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.net.DhcpInfo;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -27,7 +30,26 @@ public class SocketService extends Service {
     public SocketService() {
         worker = new Worker();
         socketThread = new Thread(worker);
+        socketThread.start();
         binder = new TransportBinder(this);
+        ses.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                worker.discover();
+            }
+        }, 1,1, TimeUnit.SECONDS);
+    }
+
+    InetAddress getBroadcastAddress() throws IOException {
+        WifiManager wifi = (WifiManager) this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        DhcpInfo dhcp = wifi.getDhcpInfo();
+        // handle null somehow
+
+        int broadcast = (dhcp.ipAddress & dhcp.netmask) | ~dhcp.netmask;
+        byte[] quads = new byte[4];
+        for (int k = 0; k < 4; k++)
+            quads[k] = (byte) ((broadcast >> k * 8) & 0xFF);
+        return InetAddress.getByAddress(quads);
     }
 
     @Override
@@ -58,6 +80,7 @@ public class SocketService extends Service {
         DatagramSocket clientSocket;
         InetAddress remote;
         byte[] sendbuf = new byte[20];
+        byte[] discoveryMessage = "discover".getBytes();
 
         synchronized void getStatus() {
             sendbuf[0] = 0;
@@ -85,10 +108,24 @@ public class SocketService extends Service {
                 DatagramPacket recv = new DatagramPacket(buffer, buffer.length);
                 try {
                     clientSocket.receive(recv);
-                    System.err.println(recv.getLength());
+                    byte[] recvData = recv.getData();
+                    String recvString = new String(recvData, recv.getOffset(), recv.getLength());
+                    if (recvString.equals("discover")) {
+                        remote = recv.getAddress();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+        }
+
+        public void discover() {
+            try {
+                InetAddress broadcast = getBroadcastAddress();
+                DatagramPacket packet = new DatagramPacket(discoveryMessage, 0, discoveryMessage.length, broadcast, 1234);
+                clientSocket.send(packet);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

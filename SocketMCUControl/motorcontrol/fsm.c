@@ -48,8 +48,8 @@ void nextChar(char d) {
     case 1: tryPrefix(d);
             break;
     case 2: switch(d) {
-              case '+': sgn = 1;readState = 3; break;
-              case '-': sgn = -1;readState = 3; break;
+              case '+': sgn = 1;readState = 3;acc=0; break;
+              case '-': sgn = -1;readState = 3;acc=0; break;
               default:
                         t = digit(d);
                         if (t<0) {
@@ -82,6 +82,7 @@ void test(char *c) {
 		nextChar(*ch);
     ++ch;
 	}
+	printf("state: %d numbers[%d,%d,%d]\n", readState, numbers[0], numbers[1], numbers[2]);
 }
 
 void main() {
@@ -89,5 +90,6 @@ void main() {
 	test("_R100L100C200|_R100L100C200|");
 	test("_R100L_R110L120C200|");
 	test("_R100L200C172|");
+	test("_R-158L-151C11|");
 }
 

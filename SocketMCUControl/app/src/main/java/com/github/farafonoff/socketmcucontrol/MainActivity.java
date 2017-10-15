@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity implements SteeringHandler {
     TransportBinder socketService;
     int cn;
 
-    static String build(int l, int r) {
+    static String build(int r, int l) {
         return String.format("_R%dL%dC%d|",r,l,l^r);
     }
 
