@@ -1,6 +1,28 @@
 rpin = 1
-gpin = 2
-bpin = 5
+bpin = 2
+gpin = 5
+if (udpsocket~=nil) then
+    udpsocket:close()
+end
+function initPin(id)
+    gpio.mode(id,gpio.OUTPUT);gpio.write(id,gpio.LOW);
+    if (pwm~=nil) then
+        pwm.setup(id,1000,1023);--PWM 1KHz, Duty 1023
+        pwm.start(id);
+        pwm.setduty(id,0);
+    end
+end
+function setColor(rv,gv,bv)
+    if (pwm~=nil) then
+        pwm.setduty(rpin, rv/255*1023)
+        pwm.setduty(gpin, gv/255*1023)
+        pwm.setduty(bpin, bv/255*1023)
+    else
+        gpio.write(rpin, rv>127 and gpio.HIGH or gpio.LOW)
+        gpio.write(gpin, gv>127 and gpio.HIGH or gpio.LOW)
+        gpio.write(bpin, bv>127 and gpio.HIGH or gpio.LOW)
+    end
+end
 function initGPIO()
     --1,2EN     D1 GPIO5
     --3,4EN     D2 GPIO4
@@ -10,18 +32,28 @@ function initGPIO()
     gpio.mode(0,gpio.OUTPUT);--LED Light on
     gpio.write(0,gpio.LOW);
     
-    gpio.mode(rpin,gpio.OUTPUT);gpio.write(rpin,gpio.LOW);
-    gpio.mode(gpin,gpio.OUTPUT);gpio.write(gpin,gpio.LOW);
-    gpio.mode(bpin,gpio.OUTPUT);gpio.write(bpin,gpio.LOW);
+    initPin(rpin)
+    initPin(gpin)
+    initPin(bpin)
 end
 
 initGPIO();
 
 
+function retry_run(wait)
+        local mytimer = tmr.create()
+        mytimer:register(wait, tmr.ALARM_SINGLE, 
+            function (t)
+                t:unregister()
+                try_run()
+            end)
+        mytimer:start()    
+end
+
 function continue_run(cor)
     local res, delay = coroutine.resume(cor)
-    print(res, delay,coroutine.status(cor))
     if (res == false or delay == nil) then
+        retry_run(100)
         return
     end
     if (delay>0) then
@@ -41,28 +73,22 @@ end
 
 function try_run() 
     f = loadfile('input.lua')
-    co = coroutine.create(f)
-    continue_run(co)            
+    print(f);
+    if (f) then
+        co = coroutine.create(f)
+        continue_run(co)
+    else
+        retry_run(1000)
+    end
 end
+
+retry_run(1000);
 
 function car_run()
     state=""
     initGPIO();
+    
 
-    function setColor(state)
-        r,l,c = string.match(state, '_R(%d+)G(%d+)B(%d+)|');
-        r = tonumber(r);
-        g = tonumber(g);
-        b = tonumber(b);
-    end
-    
-    
-    tmr.alarm(0,500, tmr.ALARM_AUTO, function() 
-        if string.len(state)>0 then 
-            setMotors(state);
-        end
-    end)
-    
     print('HEAP:',node.heap())
     
     udpSocket = net.createUDPSocket()
@@ -81,7 +107,7 @@ function car_run()
         --s:send(port, ip, "echo: " .. data)
     end)
     port, ip = udpSocket:getaddr()
-    print(string.format("local UDP socket address / port: %s:%d", ip, port))
+    print(string.format("local UDP socket address / port: %s:%d", ip, port))    
 end
 
 print('HEAP:',node.heap())
