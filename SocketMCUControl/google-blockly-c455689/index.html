@@ -543,7 +543,7 @@
     Blockly.svgResize(demoWorkspace);
     setInterval(() => {
         var lua = Blockly.Lua.workspaceToCode(demoWorkspace);
-        lua.replace(/ do[ ]?\n/, 'do \ncoroutine.yield(0);\n')
+        lua = lua.replace(/ do[ ]?\n/, ' do \ncoroutine.yield(0);\n')
         document.querySelector('#generated').textContent = lua;
     },500)
   </script>
