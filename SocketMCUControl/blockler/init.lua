@@ -73,7 +73,6 @@ end
 
 function try_run() 
     f = loadfile('input.lua')
-    print(f);
     if (f) then
         co = coroutine.create(f)
         continue_run(co)

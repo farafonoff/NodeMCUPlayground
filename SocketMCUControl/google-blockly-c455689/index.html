@@ -36,7 +36,8 @@
       <tr>
           <td>
               <div>
-                  <button>&gt;</button>
+                  <button onclick="run()">&gt;</button>
+                  <select id='devices'></select>
                   <button onclick='save()'>Save</button>
                   <input type="file" id="loadFiles" name="files" accept='text/xml, .xml' onchange="load(event)"/>
               </div>
@@ -541,11 +542,43 @@
     window.addEventListener('resize', onresize, false);
     onresize();
     Blockly.svgResize(demoWorkspace);
-    setInterval(() => {
+    function generate() {
         var lua = Blockly.Lua.workspaceToCode(demoWorkspace);
         lua = lua.replace(/ do[ ]?\n/, ' do \ncoroutine.yield(0);\n')
-        document.querySelector('#generated').textContent = lua;
+        return lua;
+    }
+    updateDevices();
+    setInterval(() => {
+        //updateDevices();
+        document.querySelector('#generated').textContent = generate();
     },500)
+
+    function updateDevices() {
+        fetch('/api/devices').then(response => response.json())
+        .then(json => {
+            //let value = document.querySelector('#devices').value;
+            let options = json.map(dev => {
+                    let value = `${dev.provider}/${dev.id}`;
+                    return `<option value='${value}'>${dev.provider}/${dev.id} ${dev.description}</option>`
+                }
+            )
+            .join('');
+            document.querySelector('#devices').innerHTML = options;
+        })
+    }
+    
+
+    function run() {
+        let code = generate()
+        let device = document.querySelector('#devices').value;
+        fetch(`/api/exec/${device}`, {
+            method:'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({script: code})
+        })
+    }
   </script>
 </body>
 </html>
