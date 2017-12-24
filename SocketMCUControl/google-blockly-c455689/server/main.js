@@ -1,4 +1,3 @@
-let serial = require('./serial')
 let sockserv = require('./socket')
 
 var express = require('express');
@@ -10,7 +9,12 @@ app.use(bodyParser.json())
 app.use(cors())
 app.use(express.static('../'));
 
-let providers = [serial, sockserv]
+if (false) {
+	var serial = require('./serial')
+	var providers = [serial, sockserv]
+} else {
+	var providers = [sockserv]
+}
 
 function programize(script) {
     let prefix = ['file.open("input.lua", "w+");', 'w=file.writeline;', '\n=w\n'];
