@@ -109,6 +109,7 @@ function car_run()
     initGPIO();
     local host = '192.168.8.14';
     if (socket ~=nil) then
+        socket.on('disconnection',nil)
         socket.close()
     end
     socket = nil
@@ -118,6 +119,7 @@ end
 
 function init_connection(host, port)
     socket = net.createConnection(net.TCP, 0);
+    local my_socket = socket;
     socket:on("connection", function (sock, c)
         print('connected to hub')
     end)
@@ -141,8 +143,10 @@ function init_connection(host, port)
     end)
     socket:on('disconnection', function(err)
         print('reconnecting to hub')
-        socket = nil
-        init_connection(host, port)
+        if (my_socket == socket) then
+            socket = nil
+            init_connection(host, port)
+        end
     end)
     socket:connect(port, host);    
 end
