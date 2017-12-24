@@ -1,4 +1,5 @@
 let serial = require('./serial')
+let sockserv = require('./socket')
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -9,11 +10,11 @@ app.use(bodyParser.json())
 app.use(cors())
 app.use(express.static('../'));
 
-let providers = [serial]
+let providers = [serial, sockserv]
 
 function programize(script) {
     let prefix = ['file.open("input.lua", "w+");', 'w=file.writeline;', '\n=w\n'];
-    let suffix = ['file.close();', 'node.restart();', '']
+    let suffix = ['file.close();', 'retry_run(100);', '']
     let data = script.split('\n').map(l => `=w([==[${l}]==]);`)
     data = prefix.concat(data, suffix);
     //data = data.map(l => '='+l)
@@ -36,6 +37,13 @@ app.post('/api/exec/serial/:id', function (req, res) {
         res.sendStatus(200)
     })
     //serial.log(req.params.id).pipe(res);
+});
+
+app.post('/api/exec/socket/:id', function (req, res) {
+    let script = req.body.script;
+    sockserv.exec(req.params.id, script).then(() => {
+        res.sendStatus(200);
+    });
 });
 
 app.listen(3000, function () {

@@ -50,64 +50,44 @@ function retry_run(wait)
         mytimer:start()    
 end
 
-function continue_run(cor)
-    local res, delay = coroutine.resume(cor)
+function continue_run()
+    if (koroutine == nil) then
+        return
+    end
+    local res, delay = coroutine.resume(koroutine)
     if (res == false or delay == nil) then
         retry_run(100)
         return
     end
     if (delay>0) then
         local mytimer = tmr.create()
+        local my_coroutine = koroutine
         mytimer:register(delay, tmr.ALARM_SINGLE, 
             function (t)
                 t:unregister()
-                continue_run(cor)
+                if (my_coroutine==koroutine) then
+                    continue_run()
+                end
             end)
         mytimer:start()
     else
         node.task.post(0, function()
-            continue_run(cor)            
+            continue_run()            
         end)    
     end
 end
 
 function try_run() 
-    f = loadfile('input.lua')
+    local f = loadfile('input.lua')
     if (f) then
-        co = coroutine.create(f)
-        continue_run(co)
+        koroutine = coroutine.create(f)
+        continue_run()
     else
         retry_run(1000)
     end
 end
 
 retry_run(1000);
-
-function car_run()
-    state=""
-    initGPIO();
-    
-
-    print('HEAP:',node.heap())
-    
-    udpSocket = net.createUDPSocket()
-    udpSocket:listen(1235)
-    udpSocket:on("receive", function(s, data, port, ip)
-        --print(string.format("received '%d' from %s:%d", string.byte(data, 1), ip, port))
-        --process(string.byte(data, 1), string.sub(data, 2))
-        if data ~= "discover" then
-            state = data
-            setMotors(state);
-        else
-            print(string.format("discover: %s:%d", ip, port))    
-            
-        end 
-        udpSocket:send(port, ip, data);
-        --s:send(port, ip, "echo: " .. data)
-    end)
-    port, ip = udpSocket:getaddr()
-    print(string.format("local UDP socket address / port: %s:%d", ip, port))    
-end
 
 print('HEAP:',node.heap())
 ap_ssid,ap_pass = "esp8266","optanex14";
@@ -124,6 +104,48 @@ wifi.setmode(wifi.STATION)
 known_fi = {}
 known_fi["netis_24"]="optanex14"
 selected_config = nil
+
+function car_run()
+    initGPIO();
+    local host = '192.168.8.14';
+    if (socket ~=nil) then
+        socket.close()
+    end
+    socket = nil
+    init_connection(host, 11337);
+    --local host = 'farafonoff.tk';
+end
+
+function init_connection(host, port)
+    socket = net.createConnection(net.TCP, 0);
+    socket:on("connection", function (sock, c)
+        print('connected to hub')
+    end)
+    local buffer = nil
+    socket:on("receive", function (sock, c)
+        if buffer == nil then
+            buffer = c
+        else
+            buffer = buffer .. c
+        end
+        s,e = string.find(buffer, '==END==')
+        if (s~=nil) then
+            ss = string.sub(buffer, 1, s-1)
+            buffer = string.sub(buffer, e + 1)
+            if (file.open("input.lua", "w+")) then
+                file.write(ss)
+                file.close()
+                retry_run(100);
+            end            
+        end
+    end)
+    socket:on('disconnection', function(err)
+        print('reconnecting to hub')
+        socket = nil
+        init_connection(host, port)
+    end)
+    socket:connect(port, host);    
+end
 
 function run_softap()
         print("hotspot not found, running softap")
@@ -144,7 +166,11 @@ wifi.sta.getap(1, function(t)
     if selected_config then
         wifi.sta.autoconnect(1);
         wifi.sta.config(selected_config)
-        tmr.alarm(0,500,0,car_run)
+        wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T)
+            print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
+                T.netmask.."\n\tGateway IP: "..T.gateway)
+            tmr.alarm(0,50,0,car_run)
+        end)
     else
         tmr.alarm(0,200,0,run_softap)
     end

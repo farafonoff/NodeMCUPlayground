@@ -4,7 +4,7 @@ let serialPorts = {};
 
 let baud = 115200;
 
-module.exports.getDevices = function() {
+function getDevices() {
     return SerialPort.list().then((list) => {
         return list.map(dev => {
             return {
@@ -14,10 +14,6 @@ module.exports.getDevices = function() {
             }
         })
     });
-}
-
-module.exports.log = function(port) {
-    return getPort(port);
 }
 
 function exec(comName, code) {
@@ -49,7 +45,7 @@ function getPort(comName) {
     return serialPorts[comName];
 }
 
-module.exports.getDevices().then(console.log)
-
 module.exports.exec = exec;
-exec('COM11', '=node.heap()')
+module.exports.getDevices = getDevices;
+
+module.exports.getDevices().then(console.log)
