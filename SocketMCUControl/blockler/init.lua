@@ -1,6 +1,8 @@
 rpin = 1
 bpin = 2
 gpin = 5
+--local host = '192.168.8.14';
+local host = 'farafonoff.tk';
 if (udpsocket~=nil) then
     udpsocket:close()
 end
@@ -106,20 +108,18 @@ known_fi["netis_24"]="optanex14"
 selected_config = nil
 
 function car_run()
-    initGPIO();
-    local host = '192.168.8.14';
+    initGPIO();   
     if (socket ~=nil) then
         socket.on('disconnection',nil)
         socket.close()
     end
     socket = nil
     init_connection(host, 11337);
-    --local host = 'farafonoff.tk';
 end
 
 function init_connection(host, port)
     socket = net.createConnection(net.TCP, 0);
-    local my_socket = socket;
+    print('connecting..')
     socket:on("connection", function (sock, c)
         print('connected to hub')
     end)
@@ -143,10 +143,10 @@ function init_connection(host, port)
     end)
     socket:on('disconnection', function(err)
         print('reconnecting to hub')
-        if (my_socket == socket) then
-            socket = nil
+        socket = nil
+        node.task.post(0, function() 
             init_connection(host, port)
-        end
+        end)
     end)
     socket:connect(port, host);    
 end
