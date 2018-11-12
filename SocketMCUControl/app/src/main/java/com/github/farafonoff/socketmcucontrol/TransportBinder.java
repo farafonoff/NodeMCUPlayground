@@ -21,6 +21,10 @@ public class TransportBinder extends Binder {
     void setStatus(String state) {
         parentInstance.setStatus(state);
     }
+    void publishEvent(TransportEvent event) { for(TransportEventListener listener: listeners) {
+        listener.onEvent(event);
+    }
+    };
 
     void attachListener(TransportEventListener listener) {
         listeners.add(listener);

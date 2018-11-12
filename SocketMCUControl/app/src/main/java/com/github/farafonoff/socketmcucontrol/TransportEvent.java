@@ -5,4 +5,5 @@ package com.github.farafonoff.socketmcucontrol;
  */
 
 public interface TransportEvent {
+    double distance();
 }

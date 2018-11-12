@@ -15,7 +15,7 @@ import android.widget.TextView;
 
 import java.net.Socket;
 
-public class MainActivity extends AppCompatActivity implements SteeringHandler {
+public class MainActivity extends AppCompatActivity implements SteeringHandler, TransportEventListener {
     String TAG = MainActivity.class.toString();
     Intent intent;
     ServiceConnection sConn;
@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity implements SteeringHandler {
     int cn;
 
     static String build(int r, int l) {
-        return String.format("_R%dL%dC%d|",r,l,l^r);
+        return String.format("{\"command\": \"driveMotors\", \"r\": %d,\"l\": %d}", r, l);
     }
 
     @Override
@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements SteeringHandler {
                 socketService = (TransportBinder) service;
                 Log.d(TAG, "Service connected");
                 socketService.setStatus(carState);
+                socketService.attachListener(MainActivity.this);
             }
 
             @Override
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements SteeringHandler {
 
     void updateCarState(String s) {
         this.carState = s;
-        this.statusView.setText(s);
+        //this.statusView.setText(s);
         this.socketService.setStatus(this.carState);
     }
 
@@ -84,6 +85,16 @@ public class MainActivity extends AppCompatActivity implements SteeringHandler {
                 ));
             }
         }
+    }
+
+    @Override
+    public void onEvent(final TransportEvent te) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                statusView.setText(String.valueOf(te.distance()));
+            }
+        });
     }
 
 /*    @Override

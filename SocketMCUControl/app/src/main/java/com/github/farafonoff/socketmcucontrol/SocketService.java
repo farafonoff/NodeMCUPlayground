@@ -36,6 +36,7 @@ public class SocketService extends Service {
             @Override
             public void run() {
                 worker.discover();
+                worker.send(worker.sendbuf.length);
             }
         }, 1,1, TimeUnit.SECONDS);
     }
@@ -112,6 +113,15 @@ public class SocketService extends Service {
                     String recvString = new String(recvData, recv.getOffset(), recv.getLength());
                     if (recvString.equals("discover")) {
                         remote = recv.getAddress();
+                    } else if (recvString.startsWith("distance")) {
+                        Log.d("DISTANCE", recvString);
+                        final double distance = Double.parseDouble(recvString.split(":")[1]);
+                        binder.publishEvent(new TransportEvent() {
+                            @Override
+                            public double distance() {
+                                return distance;
+                            }
+                        });
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
